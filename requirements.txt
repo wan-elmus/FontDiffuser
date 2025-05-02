@@ -7,3 +7,5 @@ pygame
 opencv-python
 info-nce-pytorch
 kornia
+segmentation-models-pytorch==0.3.3
+tqdm
