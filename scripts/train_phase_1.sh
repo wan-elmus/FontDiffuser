@@ -32,4 +32,4 @@ accelerate launch train.py \
     --lr_scheduler="cosine" \
     --lr_warmup_steps=5000 \
     --drop_prob=0.1 \
-    --mixed_precision="fp16"
+    --mixed_precision="no"
