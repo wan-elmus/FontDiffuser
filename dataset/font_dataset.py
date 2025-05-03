@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
+from sklearn.mixture import GaussianMixture
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -53,7 +54,7 @@ class FontDataset(Dataset):
 
     def segment_shading_background(self, style_image):
         """
-        Segment a style image into shading and background components using K-means and edge detection.
+        Segment a style image into shading and background components using GMM and Sobel edge detection.
         
         Args:
             style_image: PIL Image (RGB, ~256x256).
@@ -69,18 +70,18 @@ class FontDataset(Dataset):
         # Resize to 128x128 (as per args.resolution)
         img_np = cv2.resize(img_np, (128, 128), interpolation=cv2.INTER_AREA)
         
-        # K-means clustering for background
+        # GMM for background (handles gradients better than K-means)
         pixel_vals = img_np.reshape((-1, 3)).astype(np.float32)
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-        k = 3  # Number of clusters (character, texture, background)
-        _, labels, centers = cv2.kmeans(pixel_vals, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-        centers = centers.astype(np.uint8)
-        segmented_img = centers[labels.flatten()].reshape(img_np.shape)
+        gmm = GaussianMixture(n_components=3, random_state=42)
+        gmm.fit(pixel_vals)
+        labels = gmm.predict(pixel_vals)
+        centers = gmm.means_.astype(np.uint8)
+        segmented_img = centers[labels].reshape(img_np.shape)
         
-        # Identify background cluster (largest area or smoothest)
+        # Identify background cluster (lowest variance or largest area)
         labels_2d = labels.reshape(img_np.shape[:2])
-        cluster_counts = np.bincount(labels_2d.flatten())
-        background_label = np.argmax(cluster_counts)  # Largest cluster
+        variances = [np.var(segmented_img[labels_2d == i]) for i in range(3)]
+        background_label = np.argmin(variances)  # Smoothest cluster
         background_mask = (labels_2d == background_label).astype(np.uint8) * 255
         
         # Inpaint character regions for background
@@ -89,11 +90,12 @@ class FontDataset(Dataset):
         inpaint_mask = cv2.bitwise_not(background_mask) | char_mask
         background_img = cv2.inpaint(img_np, inpaint_mask, 3, cv2.INPAINT_TELEA)
         
-        # Shading: Adaptive thresholding for strokes/texture
-        gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
-        shading = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
-        )
+        # Shading: Sobel edge detection for strokes/texture with preservation
+        grad_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+        grad_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+        edge_magnitude = np.sqrt(grad_x**2 + grad_y**2)
+        _, shading = cv2.threshold(edge_magnitude, 50, 255, cv2.THRESH_BINARY)
+        shading = shading.astype(np.uint8)
         kernel = np.ones((3, 3), np.uint8)
         shading = cv2.dilate(shading, kernel, iterations=1)
         shading = cv2.bitwise_not(shading)  # White strokes on black
@@ -136,14 +138,14 @@ class FontDataset(Dataset):
             
             self.style_to_images[style] = images_related_style
         
-        # Collect content images from content_dir (C)
-        for style in os.listdir(content_root):
-            style_path = os.path.join(content_root, style, self.phase)
-            if not os.path.isdir(style_path):
+        # Collect content images from content_dir (C) with randomized folders
+        for folder in os.listdir(content_root):
+            folder_path = os.path.join(content_root, folder, self.phase)
+            if not os.path.isdir(folder_path):
                 continue
-            for img in sorted(os.listdir(style_path)):
+            for img in sorted(os.listdir(folder_path)):
                 if img.endswith('.png'):
-                    img_path = os.path.join(style_path, img)
+                    img_path = os.path.join(folder_path, img)
                     self.content_images.append(img_path)
         
         # Collect style images from style_dir (S)
@@ -185,10 +187,15 @@ class FontDataset(Dataset):
         content_idx = os.path.splitext(target_image_name)[0]  # e.g., '0'
         content_char = self.index_to_char(content_idx)
         
-        # Read content image (from C, assume same index)
-        content_image_path = os.path.join(self.root, self.content_dir, style, self.phase, f"{content_idx}.png")
-        if not os.path.exists(content_image_path):
-            logger.warning(f"Content image missing: {content_image_path}, using blank")
+        # Read content image (from C, match index across randomized folders)
+        content_image_path = None
+        for folder in os.listdir(os.path.join(self.root, self.content_dir)):
+            candidate_path = os.path.join(self.root, self.content_dir, folder, self.phase, f"{content_idx}.png")
+            if os.path.exists(candidate_path):
+                content_image_path = candidate_path
+                break
+        if not content_image_path:
+            logger.warning(f"Content image missing for index {content_idx}, using blank")
             content_image = Image.new('RGB', (self.resolution, self.resolution))
         else:
             content_image = Image.open(content_image_path).convert('RGB')
