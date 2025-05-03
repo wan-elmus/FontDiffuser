@@ -74,8 +74,7 @@ def get_parser():
     ## learning rate
     parser.add_argument("--learning_rate", type=float, default=1e-4, 
                         help="Initial learning rate to use.")
-    parser.add_argument("--scale_lr", action="store_true", default=True, 
-                        help="Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size.")
+    parser.add_argument("--scale_lr", type=bool, default=True, help="Scale the learning rate by the number of GPUs, gradient accumulation steps, and batch size. Set to True or False.")
     parser.add_argument("--lr_scheduler", type=str, default="cosine", 
                         help="The scheduler type to use: 'linear', 'cosine', 'cosine_with_restarts', 'polynomial', 'constant', 'constant_with_warmup'")
     parser.add_argument("--lr_warmup_steps", type=int, default=5000, 
