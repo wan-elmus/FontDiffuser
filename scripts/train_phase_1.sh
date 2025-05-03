@@ -13,10 +13,10 @@ accelerate launch train.py \
       --content_image_size=128 \
       --content_encoder_downsample_size=8 \
       --channel_attn=True \
-      --content_start_channel=64 \
-      --style_start_channel=80 \
-      --shading_start_channel=64 \
-      --background_start_channel=48 \
+      --content_start_channel=32 \
+      --style_start_channel=40 \
+      --shading_start_channel=32 \
+      --background_start_channel=24 \
       --train_batch_size=1 \
       --perceptual_coefficient=0.1 \
       --offset_coefficient=0.02 \

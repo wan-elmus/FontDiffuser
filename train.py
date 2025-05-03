@@ -358,6 +358,9 @@ def validate(args, model, scheduler, dataloader, accelerator):
     return {k: v / num_batches for k, v in total_losses.items()}
 
 def main():
+    # Limit CPU threads to reduce memory overhead
+    torch.set_num_threads(1)
+
     args = get_parser().parse_args()
     is_distributed = setup_distributed(args)
     accelerator = Accelerator(
