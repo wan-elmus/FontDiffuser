@@ -17,7 +17,7 @@ accelerate launch train.py \
     --style_start_channel=80 \
     --shading_start_channel=64 \
     --background_start_channel=48 \
-    --train_batch_size=4 \
+    --train_batch_size=1 \
     --perceptual_coefficient=0.1 \
     --offset_coefficient=0.02 \
     --shading_coefficient=0.1 \
