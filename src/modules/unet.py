@@ -197,7 +197,7 @@ class UNet(ModelMixin, ConfigMixin):
         self,
         sample: torch.FloatTensor,
         timestep: Union[torch.Tensor, float, int],
-        encoder_hidden_states: torch.Tensor,
+        encoder_hidden_states: list,
         content_encoder_downsample_size: int = 4,
         return_dict: bool = False,
     ) -> Union[UNetOutput, Tuple]:
@@ -216,23 +216,17 @@ class UNet(ModelMixin, ConfigMixin):
             forward_upsample_size = True
 
         # 1. time
-        timesteps = timestep   # only one time
+        timesteps = timestep
         if not torch.is_tensor(timesteps):
-            # TODO: this requires sync between CPU and GPU. So try to pass timesteps as tensors if you can
             timesteps = torch.tensor([timesteps], dtype=torch.long, device=sample.device)
         elif torch.is_tensor(timesteps) and len(timesteps.shape) == 0:
             timesteps = timesteps[None].to(sample.device)
 
-        # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
         timesteps = timesteps.expand(sample.shape[0])
 
         t_emb = self.time_proj(timesteps)
-
-        # timesteps does not contain any weights and will always return f32 tensors
-        # but time_embedding might actually be running in fp16. so we need to cast here.
-        # there might be better ways to encapsulate this.
         t_emb = t_emb.to(dtype=self.dtype)
-        emb = self.time_embedding(t_emb)  # projection
+        emb = self.time_embedding(t_emb)
 
         # 2. pre-process
         sample = self.conv_in(sample)
@@ -248,15 +242,15 @@ class UNet(ModelMixin, ConfigMixin):
                     index=index,
                 )
             else:
-                sample, res_samples = downsample_block(hidden_states=sample, temb=emb)   
+                sample, res_samples = downsample_block(hidden_states=sample, temb=emb)
 
             down_block_res_samples += res_samples
 
         # 4. mid
         if self.mid_block is not None:
             sample = self.mid_block(
-                sample, 
-                emb, 
+                sample,
+                emb,
                 index=content_encoder_downsample_size,
                 encoder_hidden_states=encoder_hidden_states
             )
@@ -266,11 +260,9 @@ class UNet(ModelMixin, ConfigMixin):
         for i, upsample_block in enumerate(self.up_blocks):
             is_final_block = i == len(self.up_blocks) - 1
 
-            res_samples = down_block_res_samples[-len(upsample_block.resnets) :]
-            down_block_res_samples = down_block_res_samples[: -len(upsample_block.resnets)]
+            res_samples = down_block_res_samples[-len(upsample_block.resnets):]
+            down_block_res_samples = down_block_res_samples[:-len(upsample_block.resnets)]
 
-            # if we have not reached the final block and need to forward the
-            # upsample size, we do it here
             if not is_final_block and forward_upsample_size:
                 upsample_size = down_block_res_samples[-1].shape[2:]
 
@@ -279,8 +271,8 @@ class UNet(ModelMixin, ConfigMixin):
                     hidden_states=sample,
                     temb=emb,
                     res_hidden_states_tuple=res_samples,
-                    style_structure_features=encoder_hidden_states[3],
-                    encoder_hidden_states=encoder_hidden_states[2],
+                    style_structure_features=encoder_hidden_states[1],  # Content features for structure
+                    encoder_hidden_states=encoder_hidden_states,  # All features: style, content, shading, background
                 )
                 offset_out_sum += offset_out
             else:

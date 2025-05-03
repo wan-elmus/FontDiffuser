@@ -8,6 +8,8 @@ from sample import (arg_parse,
 def run_fontdiffuer(source_image, 
                     character, 
                     reference_image,
+                    shading_image,
+                    background_image,
                     sampling_step,
                     guidance_scale,
                     batch_size):
@@ -21,7 +23,9 @@ def run_fontdiffuer(source_image,
         args=args,
         pipe=pipe,
         content_image=source_image,
-        style_image=reference_image)
+        style_image=reference_image,
+        shading_image=shading_image,
+        background_image=background_image)
     return out_image
 
 
@@ -31,7 +35,6 @@ if __name__ == '__main__':
     args.ckpt_dir = 'ckpt'
     args.ttf_path = 'ttf/KaiXinSongA.ttf'
 
-    # load fontdiffuer pipeline
     pipe = load_fontdiffuer_pipeline(args=args)
 
     with gr.Blocks() as demo:
@@ -59,10 +62,10 @@ if __name__ == '__main__':
                     [<a href="https://github.com/yeungchenwa/FontDiffuser" style="color:green;">Github</a>]
                     </h3>
                     <h2 style="text-align: left; font-weight: 600; font-size: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem">
-                    1.We propose FontDiffuser, which is capable to generate unseen characters and styles, and it can be extended to the cross-lingual generation, such as Chinese to Korean.
+                    1. We propose FontDiffuser, enhanced with shading and background style migration, for generating unseen characters and styles, including cross-lingual generation (e.g., Chinese to Korean).
                     </h2>
                     <h2 style="text-align: left; font-weight: 600; font-size: 1rem; margin-top: 0.5rem; margin-bottom: 0.5rem">
-                    2. FontDiffuser excels in generating complex character and handling large style variation. And it achieves state-of-the-art performance.
+                    2. FontDiffuser excels in generating complex characters with detailed shading and background styles, achieving state-of-the-art performance.
                     </h2>
                     </div>
                     """)
@@ -72,6 +75,9 @@ if __name__ == '__main__':
                 with gr.Row():
                     source_image = gr.Image(width=320, label='[Option 1] Source Image', image_mode='RGB', type='pil')
                     reference_image = gr.Image(width=320, label='Reference Image', image_mode='RGB', type='pil')
+                with gr.Row():
+                    shading_image = gr.Image(width=320, label='Shading Image', image_mode='RGB', type='pil')
+                    background_image = gr.Image(width=320, label='Background Image', image_mode='RGB', type='pil')
                 with gr.Row():
                     character = gr.Textbox(value='隆', label='[Option 2] Source Character')
                 with gr.Row():
@@ -91,59 +97,53 @@ if __name__ == '__main__':
             gr.Markdown("## Examples")
         with gr.Row():
             with gr.Column(scale=1):
-                gr.Markdown("## Example 1️⃣: Source Image and Reference Image")
-                gr.Markdown("### In this mode, we provide both the source image and \
-                            the reference image for you to try our demo!")
+                gr.Markdown("## Example 1️⃣: Source Image, Reference Image, Shading, Background")
+                gr.Markdown("### Provide source, reference, shading, and background images to try our demo!")
                 gr.Examples(
-                    examples=[['figures/source_imgs/source_灨.jpg', 'figures/ref_imgs/ref_籍.jpg'], 
-                            ['figures/source_imgs/source_鑻.jpg', 'figures/ref_imgs/ref_鹰.jpg'],
-                            ['figures/source_imgs/source_鑫.jpg', 'figures/ref_imgs/ref_壤.jpg'],
-                            ['figures/source_imgs/source_釅.jpg', 'figures/ref_imgs/ref_雕.jpg']],
-                    inputs=[source_image, reference_image]
+                    examples=[
+                        ['figures/source_imgs/source_灨.jpg', 'figures/ref_imgs/ref_籍.jpg', 'figures/shading_imgs/shading_籍.jpg', 'figures/background_imgs/background_籍.jpg'],
+                        ['figures/source_imgs/source_鑻.jpg', 'figures/ref_imgs/ref_鹰.jpg', 'figures/shading_imgs/shading_鹰.jpg', 'figures/background_imgs/background_鹰.jpg'],
+                        ['figures/source_imgs/source_鑫.jpg', 'figures/ref_imgs/ref_壤.jpg', 'figures/shading_imgs/shading_壤.jpg', 'figures/background_imgs/background_壤.jpg'],
+                        ['figures/source_imgs/source_釅.jpg', 'figures/ref_imgs/ref_雕.jpg', 'figures/shading_imgs/shading_雕.jpg', 'figures/background_imgs/background_雕.jpg']
+                    ],
+                    inputs=[source_image, reference_image, shading_image, background_image]
                 )
             with gr.Column(scale=1):
-                gr.Markdown("## Example 2️⃣: Character and Reference Image")
-                gr.Markdown("### In this mode, we provide the content character and the reference image \
-                            for you to try our demo!")
+                gr.Markdown("## Example 2️⃣: Character, Reference Image, Shading, Background")
+                gr.Markdown("### Provide a content character, reference, shading, and background images to try our demo!")
                 gr.Examples(
-                    examples=[['龍', 'figures/ref_imgs/ref_鷢.jpg'],
-                            ['轉', 'figures/ref_imgs/ref_鲸.jpg'],
-                            ['懭', 'figures/ref_imgs/ref_籍_1.jpg'],
-                            ['識', 'figures/ref_imgs/ref_鞣.jpg']],
-                    inputs=[character, reference_image]
+                    examples=[
+                        ['龍', 'figures/ref_imgs/ref_鷢.jpg', 'figures/shading_imgs/shading_鷢.jpg', 'figures/background_imgs/background_鷢.jpg'],
+                        ['轉', 'figures/ref_imgs/ref_鲸.jpg', 'figures/shading_imgs/shading_鲸.jpg', 'figures/background_imgs/background_鲸.jpg'],
+                        ['懭', 'figures/ref_imgs/ref_籍_1.jpg', 'figures/shading_imgs/shading_籍_1.jpg', 'figures/background_imgs/background_籍_1.jpg'],
+                        ['識', 'figures/ref_imgs/ref_鞣.jpg', 'figures/shading_imgs/shading_鞣.jpg', 'figures/background_imgs/background_鞣.jpg']
+                    ],
+                    inputs=[character, reference_image, shading_image, background_image]
                 )
             with gr.Column(scale=1):
-                gr.Markdown("## Example 3️⃣: Reference Image")
-                gr.Markdown("### In this mode, we provide only the reference image, \
-                            you can upload your own source image or you choose the character above \
-                            to try our demo!")
+                gr.Markdown("## Example 3️⃣: Reference Image, Shading, Background")
+                gr.Markdown("### Provide reference, shading, and background images; upload your own source image or choose a character!")
                 gr.Examples(
-                    examples=['figures/ref_imgs/ref_闡.jpg', 
-                            'figures/ref_imgs/ref_雕.jpg',
-                            'figures/ref_imgs/ref_豄.jpg',
-                            'figures/ref_imgs/ref_馨.jpg',
-                            'figures/ref_imgs/ref_鲸.jpg',
-                            'figures/ref_imgs/ref_檀.jpg',
-                            'figures/ref_imgs/ref_鞣.jpg',
-                            'figures/ref_imgs/ref_穗.jpg',
-                            'figures/ref_imgs/ref_欟.jpg',
-                            'figures/ref_imgs/ref_籍_1.jpg',
-                            'figures/ref_imgs/ref_鷢.jpg',
-                            'figures/ref_imgs/ref_媚.jpg',
-                            'figures/ref_imgs/ref_籍.jpg',
-                            'figures/ref_imgs/ref_壤.jpg',
-                            'figures/ref_imgs/ref_蜓.jpg',
-                            'figures/ref_imgs/ref_鹰.jpg'],
+                    examples=[
+                        ['figures/ref_imgs/ref_闡.jpg', 'figures/shading_imgs/shading_闡.jpg', 'figures/background_imgs/background_闡.jpg'],
+                        ['figures/ref_imgs/ref_雕.jpg', 'figures/shading_imgs/shading_雕.jpg', 'figures/background_imgs/background_雕.jpg'],
+                        ['figures/ref_imgs/ref_豄.jpg', 'figures/shading_imgs/shading_豄.jpg', 'figures/background_imgs/background_豄.jpg'],
+                        ['figures/ref_imgs/ref_馨.jpg', 'figures/shading_imgs/shading_馨.jpg', 'figures/background_imgs/background_馨.jpg']
+                    ],
                     examples_per_page=20,
-                    inputs=reference_image
+                    inputs=[reference_image, shading_image, background_image]
                 )
         FontDiffuser.click(
             fn=run_fontdiffuer,
-            inputs=[source_image, 
-                    character, 
-                    reference_image,
-                    sampling_step,
-                    guidance_scale,
-                    batch_size],
+            inputs=[
+                source_image, 
+                character, 
+                reference_image,
+                shading_image,
+                background_image,
+                sampling_step,
+                guidance_scale,
+                batch_size
+            ],
             outputs=fontdiffuer_output_image)
     demo.launch(debug=True)

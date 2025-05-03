@@ -1,31 +1,41 @@
+#!/bin/bash
 accelerate launch train.py \
-    --seed=123 \
+    --seed=42 \
     --experience_name="FontDiffuser_training_phase_2" \
-    --data_root="data_examples" \
+    --data_root="/sensei/te141k" \
+    --target_dir="E" \
+    --content_dir="C" \
+    --style_dir="S" \
     --output_dir="outputs/FontDiffuser" \
     --report_to="tensorboard" \
     --phase_2 \
     --phase_1_ckpt_dir="phase_1_ckpt" \
     --scr_ckpt_path="ckpt/scr_210000.pth" \
-    --sc_coefficient=0.01 \
+    --sc_coefficient=0.1 \
     --num_neg=16 \
-    --resolution=96 \
-    --style_image_size=96 \
-    --content_image_size=96 \
-    --content_encoder_downsample_size=3 \
+    --nce_layers="0,4,8,12,16" \
+    --resolution=128 \
+    --style_image_size=128 \
+    --content_image_size=128 \
+    --content_encoder_downsample_size=8 \
     --channel_attn=True \
     --content_start_channel=64 \
-    --style_start_channel=64 \
-    --train_batch_size=16 \
-    --perceptual_coefficient=0.01 \
-    --offset_coefficient=0.5 \
-    --max_train_steps=30000 \
-    --ckpt_interval=5000 \
+    --style_start_channel=80 \
+    --shading_start_channel=64 \
+    --background_start_channel=48 \
+    --train_batch_size=4 \
+    --perceptual_coefficient=0.1 \
+    --offset_coefficient=0.02 \
+    --shading_coefficient=0.1 \
+    --background_coefficient=0.1 \
+    --use_lpips=True \
+    --max_train_steps=100000 \
+    --ckpt_interval=10000 \
     --gradient_accumulation_steps=1 \
-    --log_interval=50 \
+    --log_interval=100 \
     --learning_rate=1e-5 \
+    --scale_lr=True \
     --lr_scheduler="constant" \
     --lr_warmup_steps=1000 \
     --drop_prob=0.1 \
-    --mixed_precision="no"
-    
+    --mixed_precision="fp16"

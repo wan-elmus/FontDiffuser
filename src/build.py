@@ -1,8 +1,10 @@
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
-from src import (ContentEncoder, 
-                 StyleEncoder, 
-                 UNet,
-                 SCR)
+from src.modules import (ContentEncoder, 
+                         StyleEncoder, 
+                         ShadingEncoder,
+                         BackgroundEncoder,
+                         UNet,
+                         SCR)
 
 
 def build_unet(args):
@@ -51,6 +53,24 @@ def build_content_encoder(args):
         resolution=args.content_image_size[0])
     print("Get CG-GAN Content Encoder!")
     return content_image_encoder
+
+
+def build_shading_encoder(args):
+    shading_image_encoder = ShadingEncoder(
+        in_channels=3,
+        base_channels=args.shading_start_channel,
+        resolution=args.style_image_size[0])
+    print("Get Shading Encoder!")
+    return shading_image_encoder
+
+
+def build_background_encoder(args):
+    background_image_encoder = BackgroundEncoder(
+        in_channels=3,
+        base_channels=args.background_start_channel,
+        resolution=args.style_image_size[0])
+    print("Get Background Encoder!")
+    return background_image_encoder
 
 
 def build_scr(args):

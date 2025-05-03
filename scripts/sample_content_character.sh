@@ -1,6 +1,13 @@
+#!/bin/bash
 python sample.py \
     --ckpt_dir="ckpt/" \
-    --style_image_path="data_examples/sampling/example_style.jpg" \
+    --style_image_path="/sensei/te141k/S/Style1/train/0.png" \
+    --shading_image_path="/sensei/te141k/E/Style1/train/shading/0.png" \
+    --background_image_path="/sensei/te141k/E/Style1/train/background/0.png" \
+    --target_dir="E" \
+    --content_dir="C" \
+    --style_dir="S" \
+    --ttf_path="ttf/KaiXinSongA.ttf" \
     --save_image \
     --character_input \
     --content_character="隆" \
@@ -10,4 +17,6 @@ python sample.py \
     --guidance_type="classifier-free" \
     --guidance_scale=7.5 \
     --num_inference_steps=20 \
-    --method="multistep"
+    --method="multistep" \
+    --t_start=1000 \
+    --t_end=1
