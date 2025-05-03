@@ -70,7 +70,7 @@ class FontDataset(Dataset):
         # Resize to 128x128 (as per args.resolution)
         img_np = cv2.resize(img_np, (128, 128), interpolation=cv2.INTER_AREA)
         
-        # GMM for background (handles gradients better than K-means)
+        # GMM for background
         pixel_vals = img_np.reshape((-1, 3)).astype(np.float32)
         gmm = GaussianMixture(n_components=3, random_state=42)
         gmm.fit(pixel_vals)
@@ -78,10 +78,10 @@ class FontDataset(Dataset):
         centers = gmm.means_.astype(np.uint8)
         segmented_img = centers[labels].reshape(img_np.shape)
         
-        # Identify background cluster (lowest variance or largest area)
+        # Identify background cluster
         labels_2d = labels.reshape(img_np.shape[:2])
         variances = [np.var(segmented_img[labels_2d == i]) for i in range(3)]
-        background_label = np.argmin(variances)  # Smoothest cluster
+        background_label = np.argmin(variances)
         background_mask = (labels_2d == background_label).astype(np.uint8) * 255
         
         # Inpaint character regions for background
@@ -90,7 +90,7 @@ class FontDataset(Dataset):
         inpaint_mask = cv2.bitwise_not(background_mask) | char_mask
         background_img = cv2.inpaint(img_np, inpaint_mask, 3, cv2.INPAINT_TELEA)
         
-        # Shading: Sobel edge detection for strokes/texture with preservation
+        # Shading: Sobel edge detection
         grad_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
         grad_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
         edge_magnitude = np.sqrt(grad_x**2 + grad_y**2)
@@ -98,10 +98,10 @@ class FontDataset(Dataset):
         shading = shading.astype(np.uint8)
         kernel = np.ones((3, 3), np.uint8)
         shading = cv2.dilate(shading, kernel, iterations=1)
-        shading = cv2.bitwise_not(shading)  # White strokes on black
+        shading = cv2.bitwise_not(shading)
         shading_img = cv2.cvtColor(shading, cv2.COLOR_GRAY2BGR)
         
-        # Mask shading to exclude background
+        # Mask shading
         shading_img = cv2.bitwise_and(shading_img, shading_img, mask=cv2.bitwise_not(background_mask))
         
         # Convert to PIL
@@ -116,14 +116,14 @@ class FontDataset(Dataset):
         content_root = os.path.join(self.root, self.content_dir)
         style_root = os.path.join(self.root, self.style_dir)
 
-        # Debug: Print directory existence and contents
+        # Validate and debug target_root
         logger.info(f"Checking target_root: {target_root}")
         if not os.path.exists(target_root):
-            raise FileNotFoundError(f"Target directory {target_root} does not exist.")
+            raise FileNotFoundError(f"Target directory {target_root} does not exist. Ensure data_root is correct (e.g., /root/sensei/te141k).")
         target_contents = os.listdir(target_root)
         logger.info(f"Contents of {target_root}: {target_contents}")
 
-        # Collect target images from E (style/train or style/val)
+        # Collect target images from E
         for style in target_contents:
             style_path = os.path.join(target_root, style, self.phase)
             if not os.path.isdir(style_path):
@@ -137,19 +137,18 @@ class FontDataset(Dataset):
                     img_path = os.path.join(style_path, img)
                     self.target_images.append(img_path)
                     images_related_style.append(img_path)
-                    # Placeholder for shading/background (computed in __getitem__)
-                    self.shading_images.append(None)
+                    self.shading_images.append(None)  # Computed in __getitem__
                     self.background_images.append(None)
             self.style_to_images[style] = images_related_style
 
-        # Debug content_root
+        # Validate and debug content_root
         logger.info(f"Checking content_root: {content_root}")
         if not os.path.exists(content_root):
             raise FileNotFoundError(f"Content directory {content_root} does not exist.")
         content_contents = os.listdir(content_root)
         logger.info(f"Contents of {content_root}: {content_contents}")
 
-        # Collect content images from C (style/train or style/val)
+        # Collect content images from C
         for folder in content_contents:
             folder_path = os.path.join(content_root, folder, self.phase)
             if not os.path.isdir(folder_path):
@@ -162,14 +161,14 @@ class FontDataset(Dataset):
                     img_path = os.path.join(folder_path, img)
                     self.content_images.append(img_path)
 
-        # Debug style_root
+        # Validate and debug style_root
         logger.info(f"Checking style_root: {style_root}")
         if not os.path.exists(style_root):
             raise FileNotFoundError(f"Style directory {style_root} does not exist.")
         style_contents = os.listdir(style_root)
         logger.info(f"Contents of {style_root}: {style_contents}")
 
-        # Collect style images from S (style/train or style/val)
+        # Collect style images from S
         for style in style_contents:
             style_path = os.path.join(style_root, style, self.phase)
             if not os.path.isdir(style_path):
@@ -207,7 +206,7 @@ class FontDataset(Dataset):
         target_image_name = os.path.basename(target_image_path)  # e.g., '0.png'
         
         # Extract style and content
-        style = target_image_path.split(os.sep)[-3]  # e.g., 'Style1' from /sensei/te141k/E/Style1/train/0.png
+        style = target_image_path.split(os.sep)[-3]  # e.g., 'Style1'
         content_idx = os.path.splitext(target_image_name)[0]  # e.g., '0'
         content_char = self.index_to_char(content_idx)
         
