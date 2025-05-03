@@ -41,11 +41,11 @@ class FontDataset(Dataset):
         self.content_images = []
         self.style_images = []
         self.style_to_images = {}
-        # Cache for segmented images
+        # Placeholder for shading/background (computed on-the-fly)
         self.shading_images = []
         self.background_images = []
         
-        # Get data paths and precompute segmentations
+        # Get data paths
         self.get_path()
         
         # Transforms
@@ -111,49 +111,73 @@ class FontDataset(Dataset):
         return shading_image, background_image
 
     def get_path(self):
-        """Parse TE141K structure: E, C, S directories with train/val subdirs"""
+        """Parse TE141K structure: E, C, S directories with style/train/val subdirs"""
         target_root = os.path.join(self.root, self.target_dir)
         content_root = os.path.join(self.root, self.content_dir)
         style_root = os.path.join(self.root, self.style_dir)
 
-        # Collect styles from target_dir (E)
-        for style in os.listdir(target_root):
+        # Debug: Print directory existence and contents
+        logger.info(f"Checking target_root: {target_root}")
+        if not os.path.exists(target_root):
+            raise FileNotFoundError(f"Target directory {target_root} does not exist.")
+        target_contents = os.listdir(target_root)
+        logger.info(f"Contents of {target_root}: {target_contents}")
+
+        # Collect target images from E (style/train or style/val)
+        for style in target_contents:
             style_path = os.path.join(target_root, style, self.phase)
             if not os.path.isdir(style_path):
                 continue
+            logger.info(f"Checking style_path: {style_path}")
+            style_contents = os.listdir(style_path)
+            logger.info(f"Contents of {style_path}: {style_contents}")
             images_related_style = []
-            
-            # Collect target images and precompute segmentations
-            for img in sorted(os.listdir(style_path)):
+            for img in sorted(style_contents):
                 if img.endswith('.png') and not img.startswith('shading') and not img.startswith('background'):
                     img_path = os.path.join(style_path, img)
                     self.target_images.append(img_path)
                     images_related_style.append(img_path)
-                    
-                    # Generate shading and background images
-                    style_image = Image.open(img_path).convert('RGB')
-                    shading_img, background_img = self.segment_shading_background(style_image)
-                    self.shading_images.append(shading_img)
-                    self.background_images.append(background_img)
-            
+                    # Placeholder for shading/background (computed in __getitem__)
+                    self.shading_images.append(None)
+                    self.background_images.append(None)
             self.style_to_images[style] = images_related_style
-        
-        # Collect content images from content_dir (C) with randomized folders
-        for folder in os.listdir(content_root):
+
+        # Debug content_root
+        logger.info(f"Checking content_root: {content_root}")
+        if not os.path.exists(content_root):
+            raise FileNotFoundError(f"Content directory {content_root} does not exist.")
+        content_contents = os.listdir(content_root)
+        logger.info(f"Contents of {content_root}: {content_contents}")
+
+        # Collect content images from C (style/train or style/val)
+        for folder in content_contents:
             folder_path = os.path.join(content_root, folder, self.phase)
             if not os.path.isdir(folder_path):
                 continue
-            for img in sorted(os.listdir(folder_path)):
+            logger.info(f"Checking folder_path: {folder_path}")
+            folder_contents = os.listdir(folder_path)
+            logger.info(f"Contents of {folder_path}: {folder_contents}")
+            for img in sorted(folder_contents):
                 if img.endswith('.png'):
                     img_path = os.path.join(folder_path, img)
                     self.content_images.append(img_path)
-        
-        # Collect style images from style_dir (S)
-        for style in os.listdir(style_root):
+
+        # Debug style_root
+        logger.info(f"Checking style_root: {style_root}")
+        if not os.path.exists(style_root):
+            raise FileNotFoundError(f"Style directory {style_root} does not exist.")
+        style_contents = os.listdir(style_root)
+        logger.info(f"Contents of {style_root}: {style_contents}")
+
+        # Collect style images from S (style/train or style/val)
+        for style in style_contents:
             style_path = os.path.join(style_root, style, self.phase)
             if not os.path.isdir(style_path):
                 continue
-            for img in sorted(os.listdir(style_path)):
+            logger.info(f"Checking style_path: {style_path}")
+            style_path_contents = os.listdir(style_path)
+            logger.info(f"Contents of {style_path}: {style_path_contents}")
+            for img in sorted(style_path_contents):
                 if img.endswith('.png'):
                     img_path = os.path.join(style_path, img)
                     self.style_images.append(img_path)
@@ -183,7 +207,7 @@ class FontDataset(Dataset):
         target_image_name = os.path.basename(target_image_path)  # e.g., '0.png'
         
         # Extract style and content
-        style = target_image_path.split('/')[-3]  # e.g., 'Style1'
+        style = target_image_path.split(os.sep)[-3]  # e.g., 'Style1' from /sensei/te141k/E/Style1/train/0.png
         content_idx = os.path.splitext(target_image_name)[0]  # e.g., '0'
         content_char = self.index_to_char(content_idx)
         
@@ -216,9 +240,8 @@ class FontDataset(Dataset):
         target_image = Image.open(target_image_path).convert("RGB")
         nonorm_target_image = self.nonorm_transforms(target_image)
 
-        # Get cached shading and background images
-        shading_image = self.shading_images[index]
-        background_image = self.background_images[index]
+        # Compute shading and background on-the-fly
+        shading_image, background_image = self.segment_shading_background(target_image)
 
         # Apply transforms
         if self.transforms is not None:
