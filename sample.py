@@ -157,6 +157,8 @@ def image_process(args, content_image=None, style_image=None, shading_image=None
 
 def load_font_diffuser_pipeline(args):
     try:
+        logger.info("Starting to load pipeline components...")
+
         # Check if checkpoint files exist
         required_files = [
             "unet.pth", "style_encoder.pth", "content_encoder.pth",
@@ -166,21 +168,31 @@ def load_font_diffuser_pipeline(args):
         if missing_files:
             logger.warning(f"Missing checkpoint files: {missing_files}. Initializing model with random weights.")
             unet = build_unet(args=args)
+            logger.info("UNet initialized.")
             style_encoder = build_style_encoder(args=args)
+            logger.info("Style encoder initialized.")
             content_encoder = build_content_encoder(args=args)
+            logger.info("Content encoder initialized.")
             shading_encoder = build_shading_encoder(args=args)
+            logger.info("Shading encoder initialized.")
             background_encoder = build_background_encoder(args=args)
+            logger.info("Background encoder initialized.")
         else:
             unet = build_unet(args=args)
             unet.load_state_dict(torch.load(f"{args.ckpt_dir}/unet.pth", map_location=args.device))
+            logger.info("UNet loaded.")
             style_encoder = build_style_encoder(args=args)
             style_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/style_encoder.pth", map_location=args.device))
+            logger.info("Style encoder loaded.")
             content_encoder = build_content_encoder(args=args)
             content_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/content_encoder.pth", map_location=args.device))
+            logger.info("Content encoder loaded.")
             shading_encoder = build_shading_encoder(args=args)
             shading_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/shading_encoder.pth", map_location=args.device))
+            logger.info("Shading encoder loaded.")
             background_encoder = build_background_encoder(args=args)
             background_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/background_encoder.pth", map_location=args.device))
+            logger.info("Background encoder loaded.")
 
         model = FontDiffuserModelDPM(
             unet=unet,
@@ -189,11 +201,13 @@ def load_font_diffuser_pipeline(args):
             shading_encoder=shading_encoder,
             background_encoder=background_encoder,
         )
+        logger.info("FontDiffuserModelDPM created.")
+        
         model.to(args.device)
-        logger.info("Loaded model state_dict successfully")
+        logger.info("Model moved to device (CPU).")
 
         train_scheduler = build_ddpm_scheduler(args=args)
-        logger.info("Loaded training DDPM scheduler successfully")
+        logger.info("Loaded training DDPM scheduler successfully.")
 
         pipe = FontDiffuserDPMPipeline(
             model=model,
@@ -205,7 +219,7 @@ def load_font_diffuser_pipeline(args):
             content_dir=args.content_dir,
             style_dir=args.style_dir,
         )
-        logger.info("Loaded DPM-Solver pipeline successfully")
+        logger.info("Loaded DPM-Solver pipeline successfully.")
         return pipe
     except Exception as e:
         logger.error(f"Error loading pipeline: {str(e)}")
@@ -341,9 +355,8 @@ if __name__ == "__main__":
     pipe = load_font_diffuser_pipeline(args=args)
     if pipe is None:
         logger.error("Pipeline loading failed, exiting.")
-    else:
-        out_image = sampling(args=args, pipe=pipe)
-
+        exit(1)
+    logger.info("Pipeline loaded successfully, ready for Gradio app.")
 
 
 
