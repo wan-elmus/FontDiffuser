@@ -156,42 +156,49 @@ def image_process(args, content_image=None, style_image=None, shading_image=None
     return content_image, style_image, shading_image, background_image, content_image_pil
 
 def load_font_diffuser_pipeline(args):
-    unet = build_unet(args=args)
-    unet.load_state_dict(torch.load(f"{args.ckpt_dir}/unet.pth"))
-    style_encoder = build_style_encoder(args=args)
-    style_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/style_encoder.pth"))
-    content_encoder = build_content_encoder(args=args)
-    content_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/content_encoder.pth"))
-    shading_encoder = build_shading_encoder(args=args)
-    shading_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/shading_encoder.pth"))
-    background_encoder = build_background_encoder(args=args)
-    background_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/background_encoder.pth"))
-    model = FontDiffuserModelDPM(
-        unet=unet,
-        style_encoder=style_encoder,
-        content_encoder=content_encoder,
-        shading_encoder=shading_encoder,
-        background_encoder=background_encoder,
-    )
-    model.to(args.device)
-    logger.info("Loaded model state_dict successfully")
+    try:
+        unet = build_unet(args=args)
+        unet_path = f"{args.ckpt_dir}/unet.pth"
+        if not os.path.exists(unet_path):
+            logger.error(f"Checkpoint file not found: {unet_path}")
+            return None
+        unet.load_state_dict(torch.load(unet_path, map_location=args.device))
+        style_encoder = build_style_encoder(args=args)
+        style_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/style_encoder.pth", map_location=args.device))
+        content_encoder = build_content_encoder(args=args)
+        content_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/content_encoder.pth", map_location=args.device))
+        shading_encoder = build_shading_encoder(args=args)
+        shading_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/shading_encoder.pth", map_location=args.device))
+        background_encoder = build_background_encoder(args=args)
+        background_encoder.load_state_dict(torch.load(f"{args.ckpt_dir}/background_encoder.pth", map_location=args.device))
+        model = FontDiffuserModelDPM(
+            unet=unet,
+            style_encoder=style_encoder,
+            content_encoder=content_encoder,
+            shading_encoder=shading_encoder,
+            background_encoder=background_encoder,
+        )
+        model.to(args.device)
+        logger.info("Loaded model state_dict successfully")
 
-    train_scheduler = build_ddpm_scheduler(args=args)
-    logger.info("Loaded training DDPM scheduler successfully")
+        train_scheduler = build_ddpm_scheduler(args=args)
+        logger.info("Loaded training DDPM scheduler successfully")
 
-    pipe = FontDiffuserDPMPipeline(
-        model=model,
-        ddpm_train_scheduler=train_scheduler,
-        model_type=args.model_type,
-        guidance_type=args.guidance_type,
-        guidance_scale=args.guidance_scale,
-        target_dir=args.target_dir,
-        content_dir=args.content_dir,
-        style_dir=args.style_dir,
-    )
-    logger.info("Loaded DPM-Solver pipeline successfully")
-
-    return pipe
+        pipe = FontDiffuserDPMPipeline(
+            model=model,
+            ddpm_train_scheduler=train_scheduler,
+            model_type=args.model_type,
+            guidance_type=args.guidance_type,
+            guidance_scale=args.guidance_scale,
+            target_dir=args.target_dir,
+            content_dir=args.content_dir,
+            style_dir=args.style_dir,
+        )
+        logger.info("Loaded DPM-Solver pipeline successfully")
+        return pipe
+    except Exception as e:
+        logger.error(f"Error loading pipeline: {str(e)}")
+        return None
 
 def sampling(args, pipe, content_image=None, style_image=None, shading_image=None, background_image=None):
     if not args.demo:
@@ -321,4 +328,7 @@ def instructpix2pix(pil_image, text_prompt, pipe):
 if __name__ == "__main__":
     args = arg_parse()
     pipe = load_font_diffuser_pipeline(args=args)
-    out_image = sampling(args=args, pipe=pipe)
+    if pipe is None:
+        logger.error("Pipeline loading failed, exiting.")
+    else:
+        out_image = sampling(args=args, pipe=pipe)
