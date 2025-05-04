@@ -158,7 +158,7 @@ def image_process(args, content_image=None, style_image=None, shading_image=None
 def load_font_diffuser_pipeline(args):
     try:
         logger.info("Starting to load pipeline components...")
-
+        
         # Check if checkpoint files exist
         required_files = [
             "unet.pth", "style_encoder.pth", "content_encoder.pth",
@@ -166,17 +166,17 @@ def load_font_diffuser_pipeline(args):
         ]
         missing_files = [f for f in required_files if not os.path.exists(f"{args.ckpt_dir}/{f}")]
         if missing_files:
-            logger.warning(f"Missing checkpoint files: {missing_files}. Initializing model with random weights.")
+            logger.warning(f"Missing checkpoint files: {missing_files}. Initializing minimal model with random weights.")
             unet = build_unet(args=args)
-            logger.info("UNet initialized.")
+            logger.info("UNet initialized with minimal random weights.")
             style_encoder = build_style_encoder(args=args)
-            logger.info("Style encoder initialized.")
+            logger.info("Style encoder initialized with minimal random weights.")
             content_encoder = build_content_encoder(args=args)
-            logger.info("Content encoder initialized.")
+            logger.info("Content encoder initialized with minimal random weights.")
             shading_encoder = build_shading_encoder(args=args)
-            logger.info("Shading encoder initialized.")
+            logger.info("Shading encoder initialized with minimal random weights.")
             background_encoder = build_background_encoder(args=args)
-            logger.info("Background encoder initialized.")
+            logger.info("Background encoder initialized with minimal random weights.")
         else:
             unet = build_unet(args=args)
             unet.load_state_dict(torch.load(f"{args.ckpt_dir}/unet.pth", map_location=args.device))
