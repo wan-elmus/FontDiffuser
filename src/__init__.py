@@ -10,4 +10,6 @@ from .build import (build_unet,
                    build_ddpm_scheduler, 
                    build_style_encoder, 
                    build_content_encoder,
+                   build_shading_encoder,
+                   build_background_encoder,
                    build_scr)
