@@ -48,8 +48,7 @@ def arg_parse():
     parser.add_argument("--background_image_path", type=str, default=None)
     parser.add_argument("--save_image", action="store_true")
     parser.add_argument("--save_image_dir", type=str, default=None)
-    parser.add_argument("--device", type=str, default="cuda:0")
-    parser.add_argument("--ttf_path", type=str, default="ttf/KaiXinSongA.ttf")
+    parser.add_argument("--device", type=str, default="cpu")  # Changed to cpu for VPS
     args = parser.parse_args()
     style_image_size = args.style_image_size
     content_image_size = args.content_image_size
@@ -156,7 +155,7 @@ def image_process(args, content_image=None, style_image=None, shading_image=None
 
     return content_image, style_image, shading_image, background_image, content_image_pil
 
-def load_fontdiffuser_pipeline(args):
+def load_font_diffuser_pipeline(args):
     unet = build_unet(args=args)
     unet.load_state_dict(torch.load(f"{args.ckpt_dir}/unet.pth"))
     style_encoder = build_style_encoder(args=args)
@@ -321,5 +320,5 @@ def instructpix2pix(pil_image, text_prompt, pipe):
 
 if __name__ == "__main__":
     args = arg_parse()
-    pipe = load_fontdiffuser_pipeline(args=args)
+    pipe = load_font_diffuser_pipeline(args=args)
     out_image = sampling(args=args, pipe=pipe)

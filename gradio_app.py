@@ -2,8 +2,7 @@ import random
 import gradio as gr
 from sample import (arg_parse, 
                     sampling,
-                    load_fontdiffuser_pipeline)
-
+                    load_font_diffuser_pipeline)
 
 def run_fontdiffuer(source_image, 
                     character, 
@@ -13,12 +12,16 @@ def run_fontdiffuer(source_image,
                     sampling_step,
                     guidance_scale,
                     batch_size):
+    args = arg_parse()
+    args.demo = True
+    args.ckpt_dir = 'ckpt'
     args.character_input = False if source_image is not None else True
-    args.content_character = character
-    args.sampling_step = sampling_step
+    args.content_character = character if character else None
+    args.num_inference_steps = sampling_step
     args.guidance_scale = guidance_scale
     args.batch_size = batch_size
     args.seed = random.randint(0, 10000)
+    pipe = load_font_diffuser_pipeline(args=args)
     out_image = sampling(
         args=args,
         pipe=pipe,
@@ -28,14 +31,12 @@ def run_fontdiffuer(source_image,
         background_image=background_image)
     return out_image
 
-
 if __name__ == '__main__':
     args = arg_parse()
     args.demo = True
     args.ckpt_dir = 'ckpt'
-    args.ttf_path = 'ttf/KaiXinSongA.ttf'
 
-    pipe = load_fontdiffuser_pipeline(args=args)
+    pipe = load_font_diffuser_pipeline(args=args)
 
     with gr.Blocks() as demo:
         with gr.Row():
@@ -101,10 +102,10 @@ if __name__ == '__main__':
                 gr.Markdown("### Provide source, reference, shading, and background images to try our demo!")
                 gr.Examples(
                     examples=[
-                        ['figures/source_imgs/source_灨.jpg', 'figures/ref_imgs/ref_籍.jpg', 'figures/shading_imgs/shading_籍.jpg', 'figures/background_imgs/background_籍.jpg'],
-                        ['figures/source_imgs/source_鑻.jpg', 'figures/ref_imgs/ref_鹰.jpg', 'figures/shading_imgs/shading_鹰.jpg', 'figures/background_imgs/background_鹰.jpg'],
-                        ['figures/source_imgs/source_鑫.jpg', 'figures/ref_imgs/ref_壤.jpg', 'figures/shading_imgs/shading_壤.jpg', 'figures/background_imgs/background_壤.jpg'],
-                        ['figures/source_imgs/source_釅.jpg', 'figures/ref_imgs/ref_雕.jpg', 'figures/shading_imgs/shading_雕.jpg', 'figures/background_imgs/background_雕.jpg']
+                        ['figures/source_imgs/source_灨.jpg', 'figures/ref_imgs/ref_籍.jpg', 'figures/shading_imgs/874.png', 'figures/background_imgs/1.png'],
+                        ['figures/source_imgs/source_鑻.jpg', 'figures/ref_imgs/ref_鹰.jpg', 'figures/shading_imgs/875.png', 'figures/background_imgs/2.png'],
+                        ['figures/source_imgs/source_鑫.jpg', 'figures/ref_imgs/ref_壤.jpg', 'figures/shading_imgs/876.png', 'figures/background_imgs/3.png'],
+                        ['figures/source_imgs/source_釅.jpg', 'figures/ref_imgs/ref_雕.jpg', 'figures/shading_imgs/877.png', 'figures/background_imgs/4.png']
                     ],
                     inputs=[source_image, reference_image, shading_image, background_image]
                 )
@@ -113,10 +114,10 @@ if __name__ == '__main__':
                 gr.Markdown("### Provide a content character, reference, shading, and background images to try our demo!")
                 gr.Examples(
                     examples=[
-                        ['龍', 'figures/ref_imgs/ref_鷢.jpg', 'figures/shading_imgs/shading_鷢.jpg', 'figures/background_imgs/background_鷢.jpg'],
-                        ['轉', 'figures/ref_imgs/ref_鲸.jpg', 'figures/shading_imgs/shading_鲸.jpg', 'figures/background_imgs/background_鲸.jpg'],
-                        ['懭', 'figures/ref_imgs/ref_籍_1.jpg', 'figures/shading_imgs/shading_籍_1.jpg', 'figures/background_imgs/background_籍_1.jpg'],
-                        ['識', 'figures/ref_imgs/ref_鞣.jpg', 'figures/shading_imgs/shading_鞣.jpg', 'figures/background_imgs/background_鞣.jpg']
+                        ['龍', 'figures/ref_imgs/ref_鷢.jpg', 'figures/shading_imgs/878.png', 'figures/background_imgs/5.png'],
+                        ['轉', 'figures/ref_imgs/ref_鲸.jpg', 'figures/shading_imgs/869.png', 'figures/background_imgs/906.png'],
+                        ['懭', 'figures/ref_imgs/ref_籍_1.jpg', 'figures/shading_imgs/870.png', 'figures/background_imgs/907.png'],
+                        ['識', 'figures/ref_imgs/ref_鞣.jpg', 'figures/shading_imgs/871.png', 'figures/background_imgs/908.png']
                     ],
                     inputs=[character, reference_image, shading_image, background_image]
                 )
@@ -125,10 +126,10 @@ if __name__ == '__main__':
                 gr.Markdown("### Provide reference, shading, and background images; upload your own source image or choose a character!")
                 gr.Examples(
                     examples=[
-                        ['figures/ref_imgs/ref_闡.jpg', 'figures/shading_imgs/shading_闡.jpg', 'figures/background_imgs/background_闡.jpg'],
-                        ['figures/ref_imgs/ref_雕.jpg', 'figures/shading_imgs/shading_雕.jpg', 'figures/background_imgs/background_雕.jpg'],
-                        ['figures/ref_imgs/ref_豄.jpg', 'figures/shading_imgs/shading_豄.jpg', 'figures/background_imgs/background_豄.jpg'],
-                        ['figures/ref_imgs/ref_馨.jpg', 'figures/shading_imgs/shading_馨.jpg', 'figures/background_imgs/background_馨.jpg']
+                        ['figures/ref_imgs/ref_闡.jpg', 'figures/shading_imgs/872.png', 'figures/background_imgs/909.png'],
+                        ['figures/ref_imgs/ref_雕.jpg', 'figures/shading_imgs/873.png', 'figures/background_imgs/910.png'],
+                        ['figures/ref_imgs/ref_豄.jpg', 'figures/shading_imgs/874.png', 'figures/background_imgs/911.png'],
+                        ['figures/ref_imgs/ref_馨.jpg', 'figures/shading_imgs/875.png', 'figures/background_imgs/1.png']
                     ],
                     examples_per_page=20,
                     inputs=[reference_image, shading_image, background_image]
@@ -146,4 +147,4 @@ if __name__ == '__main__':
                 batch_size
             ],
             outputs=fontdiffuer_output_image)
-    demo.launch(debug=True)
+    demo.launch(server_name="0.0.0.0", debug=True)
