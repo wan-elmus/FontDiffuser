@@ -1,7 +1,7 @@
 transformers==4.33.1
 accelerate==0.23.0
 diffusers==0.22.0
-# pip install gradio==4.8.0 --no-deps
+pip install gradio==4.8.0 --no-deps
 pyyaml
 pygame
 opencv-python
