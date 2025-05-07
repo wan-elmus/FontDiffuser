@@ -1,7 +1,7 @@
 transformers==4.33.1
 accelerate==0.23.0
 diffusers==0.22.0
-gradio==5.20.0
+gradio==4.8.0
 pyyaml
 pygame
 opencv-python
@@ -16,7 +16,7 @@ Pillow
 numpy
 tensorboard
 scikit-learn
-huggingface_hub==0.28.1
+huggingface_hub==0.19.0
 lpips
 pydantic
 fastapi
