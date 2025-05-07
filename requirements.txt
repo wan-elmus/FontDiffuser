@@ -1,7 +1,7 @@
 transformers==4.33.1
 accelerate==0.23.0
 diffusers==0.22.0
-gradio==4.8.0 --no-deps
+gradio==4.8.0
 pyyaml
 pygame
 opencv-python
@@ -18,6 +18,6 @@ tensorboard
 scikit-learn
 huggingface_hub==0.19.0
 lpips
-pydantic==1.10.13
-fastapi==0.95.0
-starlette==0.26.1
+pydantic
+fastapi
+starlette
